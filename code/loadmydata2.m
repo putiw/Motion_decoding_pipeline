@@ -1,15 +1,9 @@
  function [DATA] = loadmydata2(sub,ses,run,BASE,roiname)
-% %
-% roidx = 1;
-% session = 1;
-% runn = 1;
 
 DATA = cell(numel(run),numel(roiname));
 runidx = 0;
 for session = 1:length(ses)
-
-    
-          
+      
     for runn = 1:numel(run(:,session))
        
         

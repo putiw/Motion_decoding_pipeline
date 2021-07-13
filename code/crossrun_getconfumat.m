@@ -6,16 +6,14 @@ tic
 % Dependencies
 restoredefaultpath
  
-
 addpath(genpath('~/Documents/GitHub/vistasoft'));
 
 BASE = '/Users/pw1246/Desktop/motion/';
 addpath(genpath(BASE)); 
-%BASE = '/Volumes/Vision/MRI/Decoding/';
 
 
-sub = 'sub-0202';
-ses = {'01'};%,'02'};
+sub = 'sub-0201';
+ses = {'01','02'};
 run =[[1:10]'];%,[1:10]'];
 roiname =  {'V1','V2','hMT','IPS0'};
 %roiname =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
@@ -52,8 +50,7 @@ for ii = 1:size(DATA,2)
     clear Resp_dir temp_Res
     cnfm{ii,1} = zeros(dir_n,dir_n);
     for RUN = 1:runn
-        run_group = repmat(gg(:,mod(RUN,2)+1),dir_rep,1);
-        run_group = repmat(gg(:,2),dir_rep,1);
+        run_group = repmat(gg(:,mod(RUN,2)+1),dir_rep,1);        
         data = DATA{RUN,ii};
         [n,voxel_n] = size(data);
         voxelsize(ii)=voxel_n;
