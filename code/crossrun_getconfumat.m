@@ -6,6 +6,7 @@ tic
 % Dependencies
 restoredefaultpath
 
+addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/jeheelab/TAFKAP
 addpath(genpath('~/Documents/GitHub/vistasoft'));
 
 % BASE = '/Users/pw1246/Desktop/motion/';
@@ -15,15 +16,90 @@ addpath(genpath(BASE));
 
 
 sub = 'sub-0201';
-ses = {'01','02'};
-run =[[1:10]'];%,[1:10]'];
-roiname =  {'V1','V2','hMT','IPS0'};
+ses = {'01'}; %,'02'};
+run = [1:10]';%,[1:10]'];
+roi =  {'V1','V2','hMT','IPS0'};
 %roiname =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
 %roiname = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
-DATA = loadmydata2(sub,ses,run,BASE,roiname);
+DATA = loadmydata2(sub,ses,run,BASE,roi);
+
+
+%% TAFKAP
+samples = [];
+nScans = length(ses)*length(run); % scans per subject
+for whichRoi = 1
+    for whichSession = 1:nScans
+        tSeries = DATA{whichSession,whichRoi}; % extract tSeries
+        
+        % downsample from TRs (240) x voxels to average response per run per direction (8) x voxels
+        tSeries = (tSeries(1:2:end-1,:) + tSeries(2:2:end,:)) ./2; % take average of every 2 TRs
+        tSeries = squeeze(mean(reshape(tSeries,15,8,[]))); % average every 8th datapoint
+        samples = [samples; tSeries]; % build samples across runs
+    end
+end
+
+% run TAFKAP decoder
+params = SetupTAFKAP();
+nDirs = 8; % motion directions
+params.stimval = 22.5.*reshape(repmat([5:-1:1 8:-1:6 4:8 1:3],1,nScans/2),1,[])'; % stimulus labels
+%params.stimval = 22.5.*reshape(repmat([1:8 8:-1:1],1,nScans/2),1,[])'; % stimulus labels (wrong but placeholder)
+params.runNs = reshape(repmat(1:nScans,nDirs,1),1,[])'; %trainruns; % stimulus block/run
+
+nFolds = 10;
+ests = []; % estimated direction
+pres = []; % presented direction
+for ii = 1:nFolds
+    c = cvpartition(params.stimval, 'Holdout', 0.1); % stratify by motion direction, but not scan
+    params.train_trials = c.training;
+    params.test_trials = c.test;
+    [est, unc, liks, hypers] = TAFKAP_Decode(samples, params);
+    ests = [ests; est];
+    pre = params.stimval(c.test);
+    pres = [pres; pre];
+end
+
+% Calculate performance
+i = 1; % nFolds
+for mm = 1 % ROIs 
+    acc(i,mm) = mean(get_acc(ests, params)); % accuracy: boot x roi
+end
+user = 'br';
+rois = 'V1';
+params.subjects = sub;
+% plot_results(user, params, rois, acc) % Plot results
+
+% Plot confusion matrix
+conmat = confusionmat(categorical(ceil(pres/22.5)),categorical(ceil(ests/22.5)));
+conmat = conmat.*nDirs./length(est); 
+
+figure(3); hold on;
+% subplot(nplot,nplot,whichRoi)
+conmat = [conmat; conmat(1,:)]; % wrap matrix
+conmat = [conmat, conmat(:,1)];
+imagesc(conmat);
+% clim = [0 .5]; % upper, lower limits
+% imagesc(conmat, clim);
+
+xlabel('Presented direction')
+ylabel('Decoded direction')
+
+xticks([1:9])
+xticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
+
+yticks([1:9])
+yticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
+
+axis tight
+% title(roi(whichRoi))
+
+if whichRoi == length(roi)
+    cb = colorbar;
+end
+cb.Label.String = 'Classification performance (%)';
+
 
 %%
-code_rep = 1000;
+code_rep = 1000; % bootstraps??
 voxelmax = 10000;
 trial_n = size(DATA{1,1},1)/2;
 dir_n = 8;
@@ -48,9 +124,10 @@ pval = zeros(size(DATA,2),1);
 pc = zeros(code_rep,size(DATA,2));pc2 = zeros(code_rep,size(DATA,2));pc3 = zeros(code_rep,size(DATA,2));pc4 = zeros(code_rep,size(DATA,2));
 chancepc = zeros(code_rep,size(DATA,2));
 
-for ii = 1:size(DATA,2)
+for ii = 1:size(DATA,2) % loop over ROIs?
     clear Resp_dir temp_Res
     cnfm{ii,1} = zeros(dir_n,dir_n);
+    
     for RUN = 1:runn
         run_group = repmat(gg(:,mod(RUN,2)+1),dir_rep,1);
         data = DATA{RUN,ii};
@@ -81,13 +158,6 @@ for ii = 1:size(DATA,2)
         end
     end
     
-    %
-    %     if sub(end) == '4';
-    %
-    % temp_Res(:,:,1:10) =[];
-    %
-    %     end
-    
     
     for kk = 1:code_rep
         clear Training_data Testing_data
@@ -98,12 +168,10 @@ for ii = 1:size(DATA,2)
             Resp_dir = temp_Res(:,randperm(voxel_n,100),:);
         end
         
-        
         testrunn = randperm(size(temp_Res,3),test_n);
         run_idx = 1:size(temp_Res,3);
         run_idx(testrunn) = [];
         Training_group = repmat(repelem(1:8,1)',size(temp_Res,3)-test_n,1);
-        
         
         temp_train = Resp_dir(:,:,run_idx);
         temp_test = Resp_dir(:,:,testrunn);
@@ -113,30 +181,23 @@ for ii = 1:size(DATA,2)
         Testing_data = vertcat(split_test{:});
         random_Training_group = Training_group(randperm(numel(Training_group),numel(Training_group)),:);
         
-        
         %random select 1 trial for each direction as testing dataset
         
         Training_data = zeros(runn*dir_n-dir_n,size(Resp_dir,2));
         Testing_data = zeros(dir_n,size(Resp_dir,2));
-        for mm = 1:dir_n
-            
+        for mm = 1:dir_n    
             train_run = 1:runn;
             test_run = randi(runn);
             train_run(test_run) = [];
             Testing_data(mm,:) = Resp_dir(mm,:,test_run);
             trainruns = num2cell(Resp_dir(mm,:,train_run),[1,2]);
             Training_data((1:8:72)+mm-1,:)= vertcat(trainruns{:});
-            
         end
         
-        
-
-        
+        % does this code only ever do 1 session at a time?
         decoded_group = classify(Testing_data,Training_data,Training_group,'diaglinear');
-        
-        
         random_decoded_group = classify(Testing_data,Training_data,random_Training_group,'diaglinear');
-        
+                
         pc(kk,ii) = length(find(decoded_group == Testing_group))/length(Testing_group);
         temp_chance = length(find(random_decoded_group == Testing_group))/length(Testing_group);
         chancepc(kk,ii) = temp_chance;
@@ -198,13 +259,13 @@ end
 
 %%
 f = fullfile(pwd,'result',[sub '-ses-' ses{:} '-classify.mat']);
-save(f,'cnfm','result','pvalueroi','pval','CIroi_mean','CIroi','roiname','voxelsize');
+save(f,'cnfm','result','pvalueroi','pval','CIroi_mean','CIroi','roi','voxelsize');
 
 
 %%
 
 close all
-titleroi = roiname;
+titleroi = roi;
 lett = {'A','B','C','D','E','F'};
 figure('Renderer', 'painters', 'Position', [10 10 1150 700]);
 %     ha1 = tight_subplot(1,3,[-0.13 0.05],[-0.05 -0.068],[0.05 .05]);
