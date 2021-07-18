@@ -32,7 +32,7 @@ roi =  {'V1','V2','hMT','IPS0'};
 design = {};
 for p=1:10
     design{p} = zeros(250,7);
-    if mod(p,2)==0
+    if mod(p,2)==1
         cnt = 1; curcond = 8;
         while cnt <= 250
             if curcond ~= 1
@@ -58,8 +58,7 @@ design = cellfun(@(x) x(11:end,:),design,'UniformOutput',0);
 Func2 = cellfun(@(x) x(:,:,:,11:end),Func2,'UniformOutput',0);
 
 
-results = GLMestimatesingletrial(design,Func2,3,1.5,'testglmsingle', ...
-    struct());
+results = GLMestimatesingletrial(design,Func2,3,1.5,'testglmsingle',struct());
 
 
 
