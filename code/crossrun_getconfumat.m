@@ -9,6 +9,9 @@ restoredefaultpath
 addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/jeheelab/TAFKAP
 addpath(genpath('~/Documents/GitHub/vistasoft'));
 
+addpath(genpath('~/Documents/GitHub/GLMsingle'));
+addpath(genpath('~/Documents/GitHub/fracridge'));
+
 % BASE = '/Users/pw1246/Desktop/motion/';
 BASE = '~/Dropbox (RVL)/MRI/Decoding/';
 
@@ -21,7 +24,43 @@ run = [1:10]';%,[1:10]'];
 roi =  {'V1','V2','hMT','IPS0'};
 %roiname =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
 %roiname = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
-DATA = loadmydata2(sub,ses,run,BASE,roi);
+[DATA, Func2] = loadmydata2(sub,ses,run,BASE,roi);
+
+
+
+
+design = {};
+for p=1:10
+    design{p} = zeros(250,7);
+    if mod(p,2)==0
+        cnt = 1; curcond = 8;
+        while cnt <= 250
+            if curcond ~= 1
+             design{p}(cnt,curcond-1) = 1;
+            end
+            cnt = cnt + 2;
+            curcond = mod2(curcond-1,8);
+        end
+    else
+        cnt = 1; curcond = 1;
+        while cnt <= 250
+            if curcond ~= 1
+             design{p}(cnt,curcond-1) = 1;
+            end
+            cnt = cnt + 2;
+            curcond = mod2(curcond+1,8);
+        end
+    end
+end
+
+design = cellfun(@(x) x(11:end,:),design,'UniformOutput',0);
+
+Func2 = cellfun(@(x) x(:,:,:,11:end),Func2,'UniformOutput',0);
+
+
+results = GLMestimatesingletrial(design,Func2,3,1.5,'testglmsingle', ...
+    struct());
+
 
 
 %% TAFKAP

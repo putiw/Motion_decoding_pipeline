@@ -1,4 +1,4 @@
-function [DATA] = loadmydata2(sub,ses,run,BASE,roiname)
+function [DATA, Func2] = loadmydata2(sub,ses,run,BASE,roiname)
 
 DATA = cell(numel(run),numel(roiname));
 runidx = 0;
@@ -28,6 +28,7 @@ for session = 1:length(ses)
         
         disp(['Loading: ' datapath]);
         Func = niftiread(fullfile(datapath));
+        Func2{runidx} = Func;
         
         framesToDrop = 10;
         Func = Func(:,:,:,framesToDrop+1:end); % Drop n frames
