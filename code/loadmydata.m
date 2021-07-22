@@ -1,26 +1,30 @@
-function [DATA, Func2] = loadmydata2(sub,ses,run,BASE,roiname)
+function DATA = loadmydata_prep(sub,ses,run,BASE,roiname)
+%
+% Load and process (detrend, normalize) data for classification
 
+% Allocate data
 DATA = cell(numel(run),numel(roiname));
-runidx = 0;
 
+runidx = 0;
 for session = 1:length(ses)
-    for runn = 1:numel(run)
-        runidx = runidx +1;
-        if sub(end) == '4' & session == 1;
-            RUN = num2str(runn+4);
+    for runn = 1:numel(run(:,session))
+        runidx = runidx+1;
+        if sub(end) == '4' && session == 1
+            RUN = num2str(runn+1);
             datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
                 sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-            if runn == 10;
-                RUN = num2str(runn+5);
-                datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
-                    sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-            end
+            %             if runn == 10;
+            %                 RUN = num2str(runn+5);
+            %                 datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
+            %                     sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
+            %             end
             
-        elseif (sub(end) == '3' | sub(end) == '5' | sub(end) == '6') | (sub(end) == '4' & session == 2);
+        elseif (sub(end) == '3' || sub(end) == '5' || sub(end) == '6') || (sub(end) == '4' && session == 2)
             RUN = num2str(run(runn));
             datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
                 sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-        else
+            
+        else % all other subjects/sessions
             RUN = num2str(run(runn));
             datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
                 sub,'_ses-',ses{session},'_task-3dmotion_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
@@ -28,8 +32,8 @@ for session = 1:length(ses)
         
         disp(['Loading: ' datapath]);
         Func = niftiread(fullfile(datapath));
-        Func2{runidx} = Func;
-        
+             
+        % Drop initial frames to eliminate transients and reach steady state
         framesToDrop = 10;
         Func = Func(:,:,:,framesToDrop+1:end); % Drop n frames
         numFrames = size(Func,4);
@@ -41,46 +45,35 @@ for session = 1:length(ses)
                 sub,'_space-T1w_downsampled_',roiname{roidx},'.nii.gz'];
             
             roi = niftiread(fullfile(roiPath));
-            
             roiSize = length(find(roi));
             [x y z] = ind2sub(size(roi),find(roi));
             
-            temp_tseries = zeros(numFrames,roiSize);
-            baseline = zeros(1,roiSize);
+            tSeries = zeros(numFrames,roiSize);
             
             % raw intensity
             for voxel = 1:roiSize
-                temp_tseries(:,voxel) = squeeze(Func(x(voxel),y(voxel),z(voxel),:));
+                tSeries(:,voxel) = squeeze(Func(x(voxel),y(voxel),z(voxel),:));
             end
             
+            %%  detrend + normalize
+            tSeries = detrend(tSeries,1); % linear detrend
             
-            % percentTseries = zeros(numFrames,roiSize);
-            percentTseries = temp_tseries;
-            % convert raw to percent change (not needed when detrending)
-            %             for voxel = 1:roiSize
-            %                 baseline = mean(temp_tseries(:,voxel));
-            %                 percentTseries(:,voxel) = 100 * (temp_tseries(:,voxel)/baseline - 1);
-            %             end
+            % tSeries = tSeries-mean(tSeries,2); % ROI-average based detrend
+            % needed for TAFKAP, does not do much beyond linear detrend for
+            % classify
             
             % fft-based detrend (works less well than linear detrend)
-            %             fmriFFT = fft(percentTseries);
+            %             fmriFFT = fft(tSeries);
             %             fmriFFT(1:5,:) = zeros(5,roiSize);
             %             fmriFFT(end-4:end,:) = zeros(5,roiSize);
-            %             temp = real(ifft(fmriFFT));
+            %             tSeries = real(ifft(fmriFFT));
             
-            temp = detrend(percentTseries,1); % linear detrend
-            
-            % temp = percentTseries-mean(percentTseries,2); % ROI-average based detrend
+            tSeries = normalize(tSeries); % z-score time-series
             % needed for TAFKAP, does not do much beyond linear detrend for
             % classify
             
-            temp = normalize(temp); % z-score time-series
-            % needed for TAFKAP, does not do much beyond linear detrend for
-            % classify
+            DATA{runidx,roidx} = tSeries;
             
-            DATA{runidx,roidx} = temp;
-            
-        end
-        
+        end   
     end
 end
