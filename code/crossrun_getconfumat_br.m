@@ -1,5 +1,3 @@
-% Setup and run classification and/or decoding algorithm
-
 clear all
 close all
 clc
@@ -8,101 +6,70 @@ tic
 % Dependencies
 restoredefaultpath
 addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/jeheelab/TAFKAP
-% Toolboxes for single trial BOLD amplitude estimation
-addpath(genpath('~/Documents/GitHub/GLMsingle'));
-addpath(genpath('~/Documents/GitHub/fracridge'));
 
 % BASE = '/Users/pw1246/Desktop/motion/';
 BASE = '~/Dropbox (RVL)/MRI/Decoding/';
+
 addpath(genpath(BASE));
 
-% Figure defaults
-set(0, 'DefaultLineLineWidth', 2);
-set(0,'defaultAxesFontSize', 14)
-
-% Set up parameters
 sub = 'sub-0201';
-ses = {'01', '02'};
-run = [1:10]';
-% roi =  {'V1'};
+ses = {'01'}; %,'02'};
+run = [1:10]';%,[1:10]'];
 roi =  {'V1','V2','hMT','IPS0'};
 %roiname =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
 %roiname = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
-DATA = loadmydata(BASE,sub,ses,run,roi);
+DATA = loadmydata(sub,ses,run,BASE,roi);
 
 
-%% Estimate single trial BOLD amplitude 
-% 
-% Requires data in cell format: subject by run
-% design = {};
-% for p=1:10
-%     design{p} = zeros(250,7);
-%     if mod(p,2)==1
-%         cnt = 1; curcond = 8;
-%         while cnt <= 250
-%             if curcond ~= 1
-%              design{p}(cnt,curcond-1) = 1;
-%             end
-%             cnt = cnt + 2;
-%             curcond = mod2(curcond-1,8);
-%         end
-%     else
-%         cnt = 1; curcond = 1;
-%         while cnt <= 250
-%             if curcond ~= 1
-%              design{p}(cnt,curcond-1) = 1;
-%             end
-%             cnt = cnt + 2;
-%             curcond = mod2(curcond+1,8);
-%         end
-%     end
-% end
-% 
-% design = cellfun(@(x) x(11:end,:),design,'UniformOutput',0);
-% Func2 = cellfun(@(x) x(:,:,:,11:end),Func2,'UniformOutput',0);
-% results = GLMestimatesingletrial(design,Func2,3,1.5,'testglmsingle',struct());
-
-%% Run TAFKAP
+%% TAFKAP
 
 nScans = length(ses)*length(run); % scans per subject
-% samples = cell(numel(roi),1);
 for whichRoi = 1:numel(roi)
-    samples{whichRoi} = cell2mat(DATA(:,whichRoi));
+    samples{whichRoi} = [];
+    for whichSession = 1:nScans
+        tSeries = DATA{whichSession,whichRoi}; % extract tSeries
+        
+        % downsample from TRs (240) x voxels to average response per run per direction (8) x voxels
+        tSeries = (tSeries(1:2:end-1,:) + tSeries(2:2:end,:)) ./2; % take average of every 2 TRs
+        % probably needs a mean([],2)
+        tSeries = squeeze(mean(reshape(tSeries,8,15,[]),2)); % average every 8th datapoint
+        samples{whichRoi} = [samples{whichRoi}; tSeries]; % build samples across runs
+    end
 end
 
-% Setup design (parameters)
-nFolds = 8; % Set to multiple of number of processing cores
+% run TAFKAP decoder
 params = SetupTAFKAP();
 nDirs = 8; % motion directions
 % params.stimval = 22.5.*reshape(repmat([5:-1:1 8:-1:6 4:8 1:3],1,nScans/2),1,[])'; % stimulus labels
 params.stimval = reshape(repmat([5:-1:1 8:-1:6 4:8 1:3],1,nScans/2),1,[])'; % categorical stimulus labels
+%params.stimval = 22.5.*reshape(repmat([1:8 8:-1:1],1,nScans/2),1,[])'; % stimulus labels (wrong but placeholder)
 params.runNs = reshape(repmat(1:nScans,nDirs,1),1,[])'; %trainruns; % stimulus block/run
 
-pre = cell(nFolds,1);
-for ii = 1:nFolds
-    p{ii} = params;
-    c = cvpartition(params.stimval, 'Holdout', 0.1); % stratify by motion direction, but not scan
-    p{ii}.train_trials = c.training;
-    p{ii}.test_trials = c.test;
-    pre{ii} = params.stimval(c.test);
-end
-
-% Run TAFKAP
-ests = cell(numel(roi),1); % Preallocate
-uncs = cell(numel(roi),1); % Preallocate
-pres = cell(numel(roi),1); % Preallocate
+nFolds = 10;
 for rr = 1:numel(roi)
-    parfor ii = 1:nFolds
+    temp_est = []; % estimated direction
+    temp_pre = []; % presented direction
+    for ii = 1:nFolds
         rng(ii);% To counter the effects of TAFKAP_Decode setting the system rand seed to const. This was an EXTRAORDINARLY hard bug to find.
-        [est{ii}, unc{ii}, liks{ii}, hypers{ii}] = TAFKAP_Decode(samples{rr}, p{ii});
+        c = cvpartition(params.stimval, 'Holdout', 0.1); % stratify by motion direction, but not scan
+        params.train_trials = c.training;
+        params.test_trials = c.test;
+        [est, unc, liks, hypers] = TAFKAP_Decode(samples{rr}, params);
+        temp_est = [temp_est; est];
+        pre = params.stimval(c.test);
+        temp_pre = [temp_pre; pre];
     end
-    ests{rr} = cell2mat(est');
-    uncs{rr} = cell2mat(unc');
-    pres{rr} = cell2mat(pre);
+    ests{rr} = temp_est;
+    pres{rr} = temp_pre;
 end
 
 %% Calculate performance
-
+% i = 1; % nFolds
+% for mm = 1 % ROIs
+%     acc(i,mm) = mean(get_acc(ests, params)); % accuracy: boot x roi
+% end
+user = 'br';
+rois = 'V1';
 params.subjects = sub;
 % plot_results(user, params, rois, acc) % Plot results
 
@@ -111,16 +78,15 @@ for rr = 1:numel(roi)
     % conmat = confusionmat(categorical(ceil(pres{rr}/22.5)),categorical(ceil(ests{rr}/22.5))); % continuous data
     conmat = confusionmat(categorical(pres{rr}),categorical(ests{rr})); % categorical data
     % conmat = conmat.*nDirs./length(est);
-    %conmat = 100.*conmat./nFolds; % convert to % accuracy
-    conmat = 100.*conmat./sum(conmat,2); % convert to % accuracy
+    conmat = 100.*conmat./nFolds;
     
     figure(3); hold on;
     subplot(2,2,rr)
     conmat = [conmat; conmat(1,:)]; % wrap matrix
     conmat = [conmat, conmat(:,1)];
-    % imagesc(conmat');
-    clim = [0 100]; % upper, lower limits
-    imagesc(conmat', clim);
+    imagesc(conmat');
+    % clim = [0 .5]; % upper, lower limits
+    % imagesc(conmat, clim);
     
     title(roi{rr})
     xlabel('Presented direction')
@@ -128,40 +94,19 @@ for rr = 1:numel(roi)
     
     xticks([1:9])
     xticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
+    
     yticks([1:9])
-    yticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))    
+    yticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
+    
     axis tight
-    set(gca,'YDir','normal')
+    % title(roi(whichRoi))
     
     if whichRoi == length(roi)
         cb = colorbar;
     end
     cb.Label.String = 'Classification performance (%)';
     
-    disp(['Classification performance ' roi{rr} ': ' num2str(100.*mean(pres{rr}==ests{rr})) '%'])
-end
-
-matlab.graphics.internal.setPrintPreferences('DefaultPaperPositionMode','manual')
-set(groot,'defaultFigurePaperPositionMode','manual')
-saveas(gcf, ['../figures/Confusion_matrix-' datestr(now,30) '.pdf'])
-
-
-% Plot uncertainty as a function of motion direction
-figure
-for rr = 1:numel(roi)
-    subplot(2,2,rr)
-    hold on
-    title(roi{rr})
-    scatter(pres{rr},uncs{rr})
-    y = splitapply(@mean,uncs{rr},pres{rr});
-    plot(1:8,y)
-    
-    xlim([.5 8.5])
-    xticks([1:9])
-    xticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
-    
-    xlabel('Presented motion direction')
-    ylabel('Entropy (nats)')
+    disp(['Classification performance ' roi{rr} ':' num2str(mean(pres{rr}==ests{rr}))])
 end
 
 %%
@@ -190,7 +135,6 @@ pval = zeros(size(DATA,2),1);
 pc = zeros(code_rep,size(DATA,2));pc2 = zeros(code_rep,size(DATA,2));pc3 = zeros(code_rep,size(DATA,2));pc4 = zeros(code_rep,size(DATA,2));
 chancepc = zeros(code_rep,size(DATA,2));
 
-% TODO remove data averaging, as that is now all done in loadmydata
 for ii = 1:size(DATA,2) % loop over ROIs?
     clear Resp_dir temp_Res
     cnfm{ii,1} = zeros(dir_n,dir_n);
@@ -229,7 +173,7 @@ for ii = 1:size(DATA,2) % loop over ROIs?
     for kk = 1:code_rep
         clear Training_data Testing_data
         
-        if voxel_n <= voxelmax
+        if voxel_n <= voxelmax;
             Resp_dir = temp_Res;
         else
             Resp_dir = temp_Res(:,randperm(voxel_n,100),:);
@@ -331,7 +275,7 @@ save(f,'cnfm','result','pvalueroi','pval','CIroi_mean','CIroi','roi','voxelsize'
 
 %%
 
-% close all
+close all
 titleroi = roi;
 lett = {'A','B','C','D','E','F'};
 figure('Renderer', 'painters', 'Position', [10 10 1150 700]);
@@ -393,7 +337,7 @@ for k1 = 1:length(RoI)
     else
         voxelcount(kk) = size(DATA{1,kk},2);
     end
-    titleroi{kk};
+    titleroi{kk}
     Title = [titleroi{kk} ' (' num2str(voxelcount(kk)) ' voxels)'];
     %Title =[{'EVC'},{'hMT+'},{'DVC'},{'VCC'}];
     title(Title);

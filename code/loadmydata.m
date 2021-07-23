@@ -1,13 +1,13 @@
-function DATA = loadmydata_prep(sub,ses,run,BASE,roiname)
+function DATA = loadmydata(BASE,sub,ses,run,roiname)
 %
 % Load and process (detrend, normalize) data for classification
 
 % Allocate data
-DATA = cell(numel(run),numel(roiname));
+DATA = cell(numel(ses).*numel(run),numel(roiname));
 
 runidx = 0;
 for session = 1:length(ses)
-    for runn = 1:numel(run(:,session))
+    for runn = 1:numel(run)
         runidx = runidx+1;
         if sub(end) == '4' && session == 1
             RUN = num2str(runn+1);
@@ -48,31 +48,37 @@ for session = 1:length(ses)
             roiSize = length(find(roi));
             [x y z] = ind2sub(size(roi),find(roi));
             
-            tSeries = zeros(numFrames,roiSize);
-            
-            % raw intensity
+            % Extract raw intensity timeseries
+            samples = zeros(numFrames,roiSize);
             for voxel = 1:roiSize
-                tSeries(:,voxel) = squeeze(Func(x(voxel),y(voxel),z(voxel),:));
+                samples(:,voxel) = squeeze(Func(x(voxel),y(voxel),z(voxel),:));
             end
             
             %%  detrend + normalize
-            tSeries = detrend(tSeries,1); % linear detrend
+            samples = detrend(samples,1); % linear detrend
             
             % tSeries = tSeries-mean(tSeries,2); % ROI-average based detrend
-            % needed for TAFKAP, does not do much beyond linear detrend for
+            % Used in TAFKAP. Does not do much beyond linear detrend for
             % classify
             
             % fft-based detrend (works less well than linear detrend)
-            %             fmriFFT = fft(tSeries);
-            %             fmriFFT(1:5,:) = zeros(5,roiSize);
-            %             fmriFFT(end-4:end,:) = zeros(5,roiSize);
-            %             tSeries = real(ifft(fmriFFT));
+            % fmriFFT = fft(tSeries);
+            % fmriFFT(1:5,:) = zeros(5,roiSize);
+            % fmriFFT(end-4:end,:) = zeros(5,roiSize);
+            % tSeries = real(ifft(fmriFFT));
             
-            tSeries = normalize(tSeries); % z-score time-series
-            % needed for TAFKAP, does not do much beyond linear detrend for
-            % classify
+            samples = (samples(1:2:end-1,:) + samples(2:2:end,:)) ./2; % take average of every 2 TRs
             
-            DATA{runidx,roidx} = tSeries;
+            samples = normalize(samples); % z-score samples
+            % needed for TAFKAP, does not do much for classify
+            
+            % Scan-based analysis (as opposed to trial-based)
+            samples = squeeze(mean(reshape(samples,8,15,[]),2)); % average every 8th datapoint
+            
+            % TODO: Return stimulus labels
+            
+            % output is downsampled from TRs (240) x voxels to average response per run per direction (8) x voxels
+            DATA{runidx,roidx} = samples;
             
         end   
     end
