@@ -23,12 +23,12 @@ set(0, 'DefaultLineLineWidth', 2);
 set(0,'defaultAxesFontSize', 14)
 
 % Set up parameters
-sub = 'sub-0204';
-ses = {'03'};
+sub = 'sub-0205';
+ses = {'01','02'};
 run = [1:10]';
 
-roi =  {'V1','hMT'};
-%roi =  {'V1','V2','hMT','IPS0'};
+%roi =  {'V1','hMT'};
+roi =  {'V1','V2','hMT','IPS0'};
 %roi =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
 %roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
 [dataset,stim_label] = loadmydata(BASE,sub,ses,run,roi);
@@ -195,11 +195,11 @@ chancepc = zeros(code_rep,numel(roi)); % percentage correct from chance
 
 
 for ii = 1:numel(roi) % loop over ROIs
-
-    cnfm{ii,1} = zeros(dir_n,dir_n);
-    data = dataset{1,ii};
     
-    [n,voxel_n] = size(data);
+    data = dataset{1,ii}; % get data for this ROI    
+    [n,voxel_n] = size(data); % trial count and voxel size
+    
+    cnfm{ii,1} = zeros(dir_n,dir_n); % setting up empty confusion matrix before bootstraps
     
     for kk = 1:code_rep
         
@@ -212,33 +212,31 @@ for ii = 1:numel(roi) % loop over ROIs
         
         for mm = 1:dir_n    
             train_run = 1:nScans;
-            test_run = randperm(nScans,test_n); %random select (test_n) trial for each direction as testing dataset without replacement
-            train_run(test_run) = [];           
-            dir_idx = find(stim_label==mm);           
+            test_run = randperm(nScans,test_n); %random select (test_n) trial for each direction as testing trial index (without replacement)
+            train_run(test_run) = []; % set the rest as the training trial index          
+            dir_idx = find(stim_label==mm); % find trial index for this direction          
             Testing_data = [Testing_data; data(dir_idx(test_run),:)];
             Training_data = [Training_data; data(dir_idx(train_run),:)];            
         end
-        
-        % does this code only ever do 1 session at a time? (it will do 2 sessions if there are 2 sessions)
-        
+    
         decoded_group = classify(Testing_data,Training_data,Training_group,'diaglinear');
         random_decoded_group = classify(Testing_data,Training_data,random_Training_group,'diaglinear');
                 
-        pc(kk,ii) = length(find(decoded_group == Testing_group))/length(Testing_group);
-        temp_chance = length(find(random_decoded_group == Testing_group))/length(Testing_group);
-        chancepc(kk,ii) = temp_chance;
-        temp_cnfm = zeros(dir_n,dir_n);
+        pc(kk,ii) = length(find(decoded_group == Testing_group))/length(Testing_group); % percentage correct
+        chancepc(kk,ii) = length(find(random_decoded_group == Testing_group))/length(Testing_group); % percentage correct from chance
+        
+        temp_cnfm = zeros(dir_n,dir_n); % confusion matrix for this bootstrap       
         for de = 1:dir_n
             for te = 1:dir_n
                 temp_cnfm(de,te) = length(find(decoded_group == de & Testing_group == te))/length(find(Testing_group == te));
             end
         end
-        cnfm{ii,1} = cnfm{ii,1} + temp_cnfm;
+        cnfm{ii,1} = cnfm{ii,1} + temp_cnfm; 
     end
     
-    cnfm{ii,1} = cnfm{ii,1}./code_rep;
+    cnfm{ii,1} = cnfm{ii,1}./code_rep; % average confusion matrix after bootstraps
     
-    [~,pval(ii),~,~] = ztest(pc(:,ii),mean(chancepc(:,ii)),std(chancepc(:,ii)),'Tail','Right');
+    [~,pval(ii),~,~] = ztest(pc(:,ii),mean(chancepc(:,ii)),std(chancepc(:,ii)),'Tail','Right'); % p value from chance
        
     SEM = std(pc(:,ii))/sqrt(length(pc(:,ii)));    
     result(ii,1) = mean(pc(:,ii)).*100;
@@ -250,6 +248,7 @@ for ii = 1:numel(roi) % loop over ROIs
 end
 
 toc
+%roi comparison stats (p value, confidence interval)
 CIroi_mean = zeros(numel(roi),numel(roi));
 CIroi = zeros(numel(roi),numel(roi));
 pvalueroi = zeros(numel(roi),numel(roi));
