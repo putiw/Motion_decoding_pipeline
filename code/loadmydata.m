@@ -1,52 +1,53 @@
-function DATA = loadmydata(BASE,sub,ses,run,roiname)
+function [dataset stim_label] = loadmydata(BASE,sub,ses,run,roi)
 %
 % Load and process (detrend, normalize) data for classification
 
-% Allocate data
-DATA = cell(numel(ses).*numel(run),numel(roiname));
+% subject scan # for each session
+scanID = repmat((1:10)',1,4);
+if sub == 'sub-0204'; % this subject uses different scan index
+    scanID(:,1) = [(5:13)';15];
+    scanID(:,3) = [(2:11)'];
+end
 
-runidx = 0;
+% scan name 
+if sub == 'sub-0203' | sub == 'sub-0204'| sub == 'sub-0205' | sub == 'sub-0206'
+    taskname = 'TASK'; % New York data
+else
+    taskname = '3dmotion'; % Abu Dhabi data
+end
+
+% Allocate data
+DATA = cell(numel(ses).*numel(run),numel(roi));
+stim_label=[];
+% true trial design matrix [even run, odd run]
+stim = [[5:-1:1 8:-1:6]' [4:8 1:3]'];
+
 for session = 1:length(ses)
     for runn = 1:numel(run)
-        runidx = runidx+1;
-        if sub(end) == '4' && session == 1
-            RUN = num2str(runn+1);
-            datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
-                sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-            %             if runn == 10;
-            %                 RUN = num2str(runn+5);
-            %                 datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
-            %                     sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-            %             end
-            
-        elseif (sub(end) == '3' || sub(end) == '5' || sub(end) == '6') || (sub(end) == '4' && session == 2)
-            RUN = num2str(run(runn));
-            datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
-                sub,'_ses-',ses{session},'_task-TASK_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-            
-        else % all other subjects/sessions
-            RUN = num2str(run(runn));
-            datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
-                sub,'_ses-',ses{session},'_task-3dmotion_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];
-        end
+        
+        runidx = scanID(runn,str2double(ses(session)));
+        RUN = num2str(runidx);
+        
+        datapath = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{session},'/func/', ...
+            sub,'_ses-',ses{session},'_task-',taskname,'_run-',RUN,'_space-T1w_desc-preproc_bold.nii.gz'];        
         
         disp(['Loading: ' datapath]);
         Func = niftiread(fullfile(datapath));
-             
+        
         % Drop initial frames to eliminate transients and reach steady state
         framesToDrop = 10;
         Func = Func(:,:,:,framesToDrop+1:end); % Drop n frames
         numFrames = size(Func,4);
         
         % Extract timecourses within the ROIs
-        for roidx = 1:numel(roiname)
+        for roidx = 1:numel(roi)
             
             roiPath = [BASE,'derivatives/fmriprep/',sub,'/ses-01/anat/rois/', ...
-                sub,'_space-T1w_downsampled_',roiname{roidx},'.nii.gz'];
+                sub,'_space-T1w_downsampled_',roi{roidx},'.nii.gz'];
             
-            roi = niftiread(fullfile(roiPath));
-            roiSize = length(find(roi));
-            [x y z] = ind2sub(size(roi),find(roi));
+            ROI = niftiread(fullfile(roiPath));
+            roiSize = length(find(ROI));
+            [x y z] = ind2sub(size(ROI),find(ROI));
             
             % Extract raw intensity timeseries
             samples = zeros(numFrames,roiSize);
@@ -74,12 +75,21 @@ for session = 1:length(ses)
             
             % Scan-based analysis (as opposed to trial-based)
             samples = squeeze(mean(reshape(samples,8,15,[]),2)); % average every 8th datapoint
-            
-            % TODO: Return stimulus labels
-            
+                  
             % output is downsampled from TRs (240) x voxels to average response per run per direction (8) x voxels
-            DATA{runidx,roidx} = samples;
+            DATA{(session-1)*numel(run)+runn,roidx} = samples;
             
-        end   
+        end
+        
+        % Return stimulus labels
+        stim_label =  [stim_label; stim(:,mod(runidx,2)+1)]; % assign stimulus labels based on odd/even run
     end
+    
+end
+
+dataset = cell(1,numel(roi));
+for whichRoi = 1:numel(roi)
+    dataset{whichRoi} = cell2mat(DATA(:,whichRoi));
+end
+
 end
