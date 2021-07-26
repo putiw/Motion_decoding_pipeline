@@ -18,4 +18,10 @@ p.stim_type = 'categorical'; % values in p.stim_val must be integers correspondi
 % p.stimval = ds.sa.targets*180/8;
 % p.runNs = ds.sa.chunks;
 
+% Scan-based or trial-based decoding
+% Trial-based decoding works (using fft-based detrending), but gives
+% overall poorer decoding performance (~20%) vs (~60%)
+% raw returns data in x,y,z,t format
+p.sample_unit = 'scan'; %'trial'; % 'scan'
+
 end
