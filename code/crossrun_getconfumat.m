@@ -12,7 +12,7 @@ addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/jeheelab/TAF
 addpath(genpath('~/Documents/GitHub/GLMsingle')); % https://github.com/kendrickkay/GLMsingle
 addpath(genpath('~/Documents/GitHub/fracridge')); % https://github.com/nrdg/fracridge
 
-addpath(genpath('~/Documents/GitHub/rokers_mri_lab/code/invChol'));
+% addpath(genpath('~/Documents/GitHub/rokers_mri_lab/code/invChol'));
 
 %BASE = '/Users/pw1246/Desktop/motion/';
 BASE = '~/Dropbox (RVL)/MRI/Decoding/';
@@ -23,7 +23,7 @@ set(0, 'DefaultLineLineWidth', 2);
 set(0,'defaultAxesFontSize', 14)
 
 % Set up parameters
-sub = 'sub-0205';
+sub = 'sub-0204';
 ses = {'01','02'};
 run = [1:10]';
 
