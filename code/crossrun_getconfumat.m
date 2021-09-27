@@ -12,10 +12,11 @@ addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/jeheelab/TAF
 addpath(genpath('~/Documents/GitHub/GLMsingle')); % https://github.com/kendrickkay/GLMsingle
 addpath(genpath('~/Documents/GitHub/fracridge')); % https://github.com/nrdg/fracridge
 
-% addpath(genpath('~/Documents/GitHub/rokers_mri_lab/code/invChol'));
+addpath(genpath('~/Documents/GitHub/rokers_mri_lab/code/invChol'));
 
 %BASE = '/Users/pw1246/Desktop/motion/';
-BASE = '~/Dropbox (RVL)/MRI/Decoding/';
+% BASE = '~/Dropbox (RVL)/MRI/Decoding/';
+BASE = '/Volumes/Macintosh HD/Decoding/';
 addpath(genpath(BASE));
 
 % Figure defaults
@@ -24,15 +25,23 @@ set(0,'defaultAxesFontSize', 14)
 
 % Set up parameters
 sub = 'sub-0204';
-ses = {'01','02'};
+ses = {'03','04'};
 run = [1:10]';
 
 %roi =  {'V1','hMT'};
 roi =  {'V1','V2','hMT','IPS0'};
 %roi =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
-%roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
+roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
 params = SetupTAFKAP(); 
 [samples,stim_label] = loadmydata(BASE,sub,ses,run,roi,params);
+
+%
+voxelsize = numel(roi,1);
+for i = 1:numel(roi)
+    voxelsize(i,1)=size(samples{i},2);
+end
+savedata = fullfile(pwd,'data',[sub '-ses-' ses{:} '.mat']);
+save(savedata,'samples','stim_label','roi','voxelsize');
 
 
 %% Estimate single trial BOLD amplitude 
@@ -123,7 +132,7 @@ end
 
 params.subjects = sub;
 % plot_results(user, params, rois, acc) % Plot results
-
+saveresult = cell(numel(roi),1);
 for whichRoi = 1:numel(roi)
     % Plot confusion matrix
     % conmat = confusionmat(categorical(ceil(pres{rr}/22.5)),categorical(ceil(ests{rr}/22.5))); % continuous data
@@ -138,7 +147,7 @@ for whichRoi = 1:numel(roi)
     % imagesc(conmat');
     clim = [0 100]; % upper, lower limits
     imagesc(conmat', clim);
-    
+    saveresult{whichRoi} = conmat';
     title(roi{whichRoi})
     xlabel('Presented direction')
     ylabel('Decoded direction')
@@ -157,6 +166,11 @@ for whichRoi = 1:numel(roi)
     
     disp(['Classification performance ' roi{whichRoi} ': ' num2str(100.*mean(pres{whichRoi}==ests{whichRoi})) '%'])
 end
+
+
+ f = fullfile(pwd,'result',[sub '-ses-' ses{:} '-TAFKAP.mat']);
+ save(f,'saveresult','ests','uncs','pres','roi','voxelsize');
+
 
 % hp4 = get(subplot(2,2,4),'Position');
 % h = colorbar('Position', [hp4(1)+hp4(3)+0.02  hp4(2)  0.03  hp4(2)+hp4(3)*2.1]);
@@ -189,99 +203,99 @@ saveas(gcf, ['../figures/Uncertainty-' datestr(now,30) '.pdf'])
 
 
 %% MATLAB Classify
-
-tic
-code_rep = 1000; % bootstraps repeats
-voxelmax = 1e5; % maximum voxels to use per ROI
-test_n = 1; % percetange of data set as testing trials
-
-trial_n = size(samples{1,1},1);  % number of trials 
-dir_n = 8; % number of directions
-nScans = trial_n/dir_n; % number of scans
-result = zeros(numel(roi),4); % allocate results
-cnfm = cell(numel(roi),1); % each runs confusion matrix is restored separately
-
-Training_group = sort(repmat(repelem(1:8,1)',nScans-test_n,1)); % training dataset stimulus label
-Testing_group = repmat(repelem(1:8,1)',test_n,1); % testing dataset stimulus label 
-random_Training_group = Training_group(randperm(length(Training_group))); % random shuffle stimulus label for decoding chance
-
-pval = zeros(numel(roi),1); % p value (significance from chance)
-pc = zeros(code_rep,numel(roi)); % percentage correct
-chancepc = zeros(code_rep,numel(roi)); % percentage correct from chance
-
-
-for ii = 1:numel(roi) % loop over ROIs
-    
-    data = samples{1,ii}; % get data for this ROI    
-    [n,voxel_n] = size(data); % trial count and voxel size
-    
-    cnfm{ii,1} = zeros(dir_n,dir_n); % setting up empty confusion matrix before bootstraps
-    
-    for kk = 1:code_rep
-        
-        if voxel_n > voxelmax
-            data = data(:,randperm(voxel_n,voxelmax),:); % randomly select (voxelmax) amount of voxels if there is a upper limit for voxel counts
-        end
-
-        Training_data = [];
-        Testing_data = [];     
-        
-        for mm = 1:dir_n    
-            train_run = 1:nScans;
-            test_run = randperm(nScans,test_n); %random select (test_n) trial for each direction as testing trial index (without replacement)
-            train_run(test_run) = []; % set the rest as the training trial index          
-            dir_idx = find(stim_label==mm); % find trial index for this direction          
-            Testing_data = [Testing_data; data(dir_idx(test_run),:)];
-            Training_data = [Training_data; data(dir_idx(train_run),:)];            
-        end
-    
-        decoded_group = classify(Testing_data,Training_data,Training_group,'diaglinear');
-        random_decoded_group = classify(Testing_data,Training_data,random_Training_group,'diaglinear');
-                
-        pc(kk,ii) = length(find(decoded_group == Testing_group))/length(Testing_group); % percentage correct
-        chancepc(kk,ii) = length(find(random_decoded_group == Testing_group))/length(Testing_group); % percentage correct from chance
-        
-        temp_cnfm = zeros(dir_n,dir_n); % confusion matrix for this bootstrap       
-        for de = 1:dir_n
-            for te = 1:dir_n
-                temp_cnfm(de,te) = length(find(decoded_group == de & Testing_group == te))/length(find(Testing_group == te));
-            end
-        end
-        cnfm{ii,1} = cnfm{ii,1} + temp_cnfm; 
-    end
-    
-    cnfm{ii,1} = cnfm{ii,1}./code_rep; % average confusion matrix after bootstraps
-    
-    [~,pval(ii),~,~] = ztest(pc(:,ii),mean(chancepc(:,ii)),std(chancepc(:,ii)),'Tail','Right'); % p value from chance
-       
-    SEM = std(pc(:,ii))/sqrt(length(pc(:,ii)));    
-    result(ii,1) = mean(pc(:,ii)).*100;
-    result(ii,2) = SEM.*196*2;   
-    SEM_chance = std(chancepc(:,ii))/sqrt(length(chancepc(:,ii)));
-    result(ii,3) = mean(chancepc(:,ii)).*100;
-    result(ii,4) = SEM_chance.*196*2;
-    voxelsize(ii)=size(data,2);
-end
-
-toc
-%roi comparison stats (p value, confidence interval)
-CIroi_mean = zeros(numel(roi),numel(roi));
-CIroi = zeros(numel(roi),numel(roi));
-pvalueroi = zeros(numel(roi),numel(roi));
-for ii = 1:numel(roi)
-    for jj = 1:numel(roi)        
-        [~,pvalueroi(ii,jj)] = ttest(pc(:,ii),pc(:,jj));
-        CIroi_mean(ii,jj) = mean(pc(:,ii)-pc(:,jj));
-        CIroi(ii,jj) = (std(pc(:,ii)-pc(:,jj))/sqrt(code_rep))*1.96;      
-    end
-end
-
-%% save data in the result folder
-f = fullfile(pwd,'result',[sub '-ses-' ses{:} '-classify.mat']);
-save(f,'cnfm','result','pvalueroi','pval','CIroi_mean','CIroi','roi','voxelsize');
-
-%% plot confusion matrix
-%close all
-%whichroi = [1 4 9 11];
-whichroi = 1:size(cnfm,1);
-plot_confusionM(cnfm,roi,voxelsize,whichroi);
+% 
+% tic
+% code_rep = 1000; % bootstraps repeats
+% voxelmax = 1e5; % maximum voxels to use per ROI
+% test_n = 1; % percetange of data set as testing trials
+% 
+% trial_n = size(samples{1,1},1);  % number of trials 
+% dir_n = 8; % number of directions
+% nScans = trial_n/dir_n; % number of scans
+% result = zeros(numel(roi),4); % allocate results
+% cnfm = cell(numel(roi),1); % each runs confusion matrix is restored separately
+% 
+% Training_group = sort(repmat(repelem(1:8,1)',nScans-test_n,1)); % training dataset stimulus label
+% Testing_group = repmat(repelem(1:8,1)',test_n,1); % testing dataset stimulus label 
+% random_Training_group = Training_group(randperm(length(Training_group))); % random shuffle stimulus label for decoding chance
+% 
+% pval = zeros(numel(roi),1); % p value (significance from chance)
+% pc = zeros(code_rep,numel(roi)); % percentage correct
+% chancepc = zeros(code_rep,numel(roi)); % percentage correct from chance
+% 
+% 
+% for ii = 1:numel(roi) % loop over ROIs
+%     
+%     data = samples{1,ii}; % get data for this ROI    
+%     [n,voxel_n] = size(data); % trial count and voxel size
+%     
+%     cnfm{ii,1} = zeros(dir_n,dir_n); % setting up empty confusion matrix before bootstraps
+%     
+%     for kk = 1:code_rep
+%         
+%         if voxel_n > voxelmax
+%             data = data(:,randperm(voxel_n,voxelmax),:); % randomly select (voxelmax) amount of voxels if there is a upper limit for voxel counts
+%         end
+% 
+%         Training_data = [];
+%         Testing_data = [];     
+%         
+%         for mm = 1:dir_n    
+%             train_run = 1:nScans;
+%             test_run = randperm(nScans,test_n); %random select (test_n) trial for each direction as testing trial index (without replacement)
+%             train_run(test_run) = []; % set the rest as the training trial index          
+%             dir_idx = find(stim_label==mm); % find trial index for this direction          
+%             Testing_data = [Testing_data; data(dir_idx(test_run),:)];
+%             Training_data = [Training_data; data(dir_idx(train_run),:)];            
+%         end
+%     
+%         decoded_group = classify(Testing_data,Training_data,Training_group,'diaglinear');
+%         random_decoded_group = classify(Testing_data,Training_data,random_Training_group,'diaglinear');
+%                 
+%         pc(kk,ii) = length(find(decoded_group == Testing_group))/length(Testing_group); % percentage correct
+%         chancepc(kk,ii) = length(find(random_decoded_group == Testing_group))/length(Testing_group); % percentage correct from chance
+%         
+%         temp_cnfm = zeros(dir_n,dir_n); % confusion matrix for this bootstrap       
+%         for de = 1:dir_n
+%             for te = 1:dir_n
+%                 temp_cnfm(de,te) = length(find(decoded_group == de & Testing_group == te))/length(find(Testing_group == te));
+%             end
+%         end
+%         cnfm{ii,1} = cnfm{ii,1} + temp_cnfm; 
+%     end
+%     
+%     cnfm{ii,1} = cnfm{ii,1}./code_rep; % average confusion matrix after bootstraps
+%     
+%     [~,pval(ii),~,~] = ztest(pc(:,ii),mean(chancepc(:,ii)),std(chancepc(:,ii)),'Tail','Right'); % p value from chance
+%        
+%     SEM = std(pc(:,ii))/sqrt(length(pc(:,ii)));    
+%     result(ii,1) = mean(pc(:,ii)).*100;
+%     result(ii,2) = SEM.*196*2;   
+%     SEM_chance = std(chancepc(:,ii))/sqrt(length(chancepc(:,ii)));
+%     result(ii,3) = mean(chancepc(:,ii)).*100;
+%     result(ii,4) = SEM_chance.*196*2;
+%     voxelsize(ii)=size(data,2);
+% end
+% 
+% toc
+% %roi comparison stats (p value, confidence interval)
+% CIroi_mean = zeros(numel(roi),numel(roi));
+% CIroi = zeros(numel(roi),numel(roi));
+% pvalueroi = zeros(numel(roi),numel(roi));
+% for ii = 1:numel(roi)
+%     for jj = 1:numel(roi)        
+%         [~,pvalueroi(ii,jj)] = ttest(pc(:,ii),pc(:,jj));
+%         CIroi_mean(ii,jj) = mean(pc(:,ii)-pc(:,jj));
+%         CIroi(ii,jj) = (std(pc(:,ii)-pc(:,jj))/sqrt(code_rep))*1.96;      
+%     end
+% end
+% 
+% %% save data in the result folder
+% f = fullfile(pwd,'result',[sub '-ses-' ses{:} '-classify.mat']);
+% save(f,'cnfm','result','pvalueroi','pval','CIroi_mean','CIroi','roi','voxelsize');
+% 
+% %% plot confusion matrix
+% %close all
+% %whichroi = [1 4 9 11];
+% whichroi = 1:size(cnfm,1);
+% plot_confusionM(cnfm,roi,voxelsize,whichroi);

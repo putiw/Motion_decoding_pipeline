@@ -7,19 +7,27 @@ function [dataset stim_label] = loadmydata(BASE,sub,ses,run,roi,p)
 
 % subject scan # for each session
 scanID = repmat((1:10)',1,4);
-if sub == 'sub-0204' % this subject uses different scan index
+if sub(end) == '4' % this subject uses different scan index
     scanID(:,1) = [(5:13)';15];
     scanID(:,3) = [(2:11)'];
 end
 
 % scan name
-% TODO: This needs to be a switch,case statement
-if sub == 'sub-0203' | sub == 'sub-0204' | sub == 'sub-0205' | sub == 'sub-0206'
-    taskname = 'TASK'; % New York data
-else
-    taskname = '3dmotion'; % Abu Dhabi data
+
+switch sub
+    case {'0203ny'}
+        taskname = '3dmotion';
+    case {'0204'}
+        taskname = '3dmotion';
+    case {'0205'}
+        taskname = '3dmotion';
+    case {'0206'}
+        taskname = '3dmotion';
+    otherwise
+        taskname = 'TASK';
 end
 
+           
 % Allocate data
 DATA = cell(numel(ses).*numel(run),numel(roi));
 stim_label=[];

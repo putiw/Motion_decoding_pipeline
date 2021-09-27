@@ -1,13 +1,13 @@
 function plot_confusionM(cnfm,roi,voxelsize,whichroi)
-figure('Renderer', 'painters', 'Position', [10 10 250+240*ceil(sqrt(numel(whichroi))) 260+180*round(sqrt(numel(whichroi)))]);
-ha1 = tight_subplot(round(sqrt(numel(whichroi))),ceil(sqrt(numel(whichroi))),[0.12-0.01*round(sqrt(numel(whichroi))) 0.09-0.01*round(sqrt(numel(whichroi)))],[0.1 0.05],[0.07 .05]);
+figure('Renderer', 'painters', 'Position', [10 10 250+240*ceil(sqrt(numel(whichroi))) 900]);
+ha1 = tight_subplot(4,6,[0.01 0.02],[0.1 0.05],[0.07 .05]);
 
 titleroi = roi(whichroi);
 for mm = 1:length(whichroi);
     axes(ha1(mm));
     kk = whichroi(mm);
     
-    combine_cfmx = cnfm{kk,1}.*100;
+    combine_cfmx = round(cnfm{kk,1}.*100);
     
     combine_cfmx(9,:) = combine_cfmx(1,:);
     combine_cfmx(:,9) = combine_cfmx(:,1);
@@ -15,7 +15,7 @@ for mm = 1:length(whichroi);
     imagesc(combine_cfmx)
     
     c1 = 100/8; %chance
-    c2 = 36; %max
+    c2 = 50; %max
     cb = colorbar(); caxis([0 c2]);
     cb.Ruler.TickLabelFormat = '%d%%';
     
@@ -35,16 +35,22 @@ for mm = 1:length(whichroi);
     yticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
     xticks([1:9]);
     xticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
-    text(0.42:8.42,1:9,num2str(diag(combine_cfmx),2),'FontSize',15);
+    text(0.55:8.55,1:9,num2str(diag(combine_cfmx),2),'FontSize',15);
     set(gca,'YDir','normal')
-    ylabel('decoded direction')
-    xlabel('presented direction')
+%     ylabel('decoded direction')
+%     xlabel('presented direction')
     axis square;
+    
+    if voxelsize == 0
+        title(roi{kk});
+    else
     Title = [roi{kk} ' (' num2str(voxelsize(kk)) ' voxels)'];
     title(Title);
-    set(gca,'FontSize',15)
+    end
+   box on 
+    set(gca,'FontSize',15,'LineWidth',2)
     hold off
 end
 
-
+delete(ha1(length(whichroi)+1:end));
 end
