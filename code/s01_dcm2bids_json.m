@@ -3,12 +3,16 @@
 % Adapted from Aaron Cochrane (@wisc.edu)
 
 clear all
-PATH = getenv('PATH'); setenv('PATH', [PATH ':/usr/local/bin']); % Set path
 
-%projectDir  = '/Volumes/Vision/MRI/Decoding';
-projectDir  = '/Users/pw1246/Desktop/motion';
-sub         = '0205'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; %
-ses         = {'01','02'}; %{'01','02','03','04'}; %'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
+% Depending on the install method, fmriprep-docker is in different locations
+% PATH = getenv('PATH'); setenv('PATH', [PATH ':/usr/local/bin']); % Set path
+PATH = getenv('PATH'); setenv('PATH', ['/opt/anaconda3/bin:/usr/local/bin:' PATH]); % 
+
+
+projectDir  = '/Volumes/Vision/MRI/Decoding';
+% projectDir  = '~/Desktop/motion';
+sub         = '0228'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; %
+ses         = {'00','01','02','03','04'}; % {'01','02'}; %%'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
 
 %% Run dcm2bids in the shell wrapped in matlab
 
