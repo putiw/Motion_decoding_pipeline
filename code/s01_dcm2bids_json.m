@@ -10,7 +10,7 @@ PATH = getenv('PATH'); setenv('PATH', ['/opt/anaconda3/bin:/usr/local/bin:' PATH
 
 projectDir  = '/Volumes/Vision/MRI/Decoding';
 % projectDir  = '~/Desktop/motion';
-sub         = '0201'; %'0248'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; % '203' has an unexpected epi naming convention
+sub         = '0903'; %'0248'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; % '203' has an unexpected epi naming convention
 ses         = {'01','02','03','04'}; % {'01','02'}; %%'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
 
 %% Run dcm2bids in the shell wrapped in matlab
