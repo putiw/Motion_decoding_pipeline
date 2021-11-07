@@ -1,0 +1,89 @@
+{
+  "descriptions": [
+    {
+      "dataType": "func",
+      "modalityLabel": "bold",
+      "customLabels": "task-3dmotion",
+      "criteria": {
+        "SidecarFilename": "*task-3dmotion*",
+        "MultibandAccelerationFactor": "[1-9]"
+      }
+    },
+    {
+      "dataType": "func",
+      "modalityLabel": "sbref",
+      "customLabels": "task-3dmotion",
+      "criteria": {
+        "SidecarFilename": "*task-3dmotion*",
+        "ImageComments": "Single-band reference"
+      }
+    },
+    {
+      "dataType": "fmap",
+      "modalityLabel": "epi",
+      "customLabels": "dir-ap",
+      "IntendedFor": [
+        0, 1
+      ],
+      "criteria": {
+        "SidecarFilename": "*DISTORTION_AP*"
+      }
+    },
+    {
+      "dataType": "fmap",
+      "modalityLabel": "epi",
+      "customLabels": "dir-pa",
+      "IntendedFor": [
+        0, 1
+      ],
+      "criteria": {
+        "SidecarFilename": "*DISTORTION_PA*"
+      }
+    },
+    {
+      "dataType": "fmap",
+      "modalityLabel": "epi",
+      "customLabels": "dir-ap",
+      "IntendedFor": [
+        0, 1
+      ],
+      "criteria": {
+        "SidecarFilename": "*_dir-ap_*"
+      }
+    },
+    {
+      "dataType": "fmap",
+      "modalityLabel": "epi",
+      "customLabels": "dir-pa",
+      "IntendedFor": [
+        0, 1
+      ],
+      "criteria": {
+        "SidecarFilename": "*_dir-pa_*"
+      }
+    },
+    {
+      "dataType": "dwi",
+      "modalityLabel": "dwi",
+      "criteria": {
+        "SidecarFilename": "*dMRI*"
+      }
+    },
+    {
+      "dataType": "anat",
+      "modalityLabel": "T1w",
+      "criteria": {
+        "SidecarFilename": "*T1?_*",
+        "ImageType": ["ORIGINAL", "PRIMARY", "M", "ND"]
+      }
+    },
+    {
+      "dataType": "anat",
+      "modalityLabel": "T2w",
+      "criteria": {
+        "SidecarFilename": "*T2?_*",
+        "ImageType": ["ORIGINAL", "PRIMARY", "M", "ND"]
+      }
+    }
+  ]
+}
