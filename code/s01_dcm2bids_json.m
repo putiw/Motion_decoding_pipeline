@@ -1,16 +1,14 @@
 % Convert NYUAD dcm images to .nii in BIDS format
 %
 % Adapted from Aaron Cochrane (@wisc.edu)
-
 clear all
 
 % Depending on the install method, fmriprep-docker is in different locations
 PATH = getenv('PATH'); setenv('PATH', ['/opt/anaconda3/bin:/usr/local/bin:' PATH]); % 
 
-
 projectDir  = '/Volumes/Vision/MRI/Decoding';
 % projectDir  = '~/Desktop/motion';
-sub         = '0201'; %'0248'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; % '203' has an unexpected epi naming convention
+sub         = '0903'; %'0248'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; % '203' has an unexpected epi naming convention
 ses         = {'01','02','03','04'}; % {'01','02'}; %%'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
 
 %% Run dcm2bids in the shell wrapped in matlab
@@ -23,7 +21,7 @@ for ii = 1:length(ses)
     config = [projectDir '/code/bids_convert.json'];
     
     system(['dcm2bids -d ' dcmDir ...
-        ' -o ' projectDir ...
+        ' -o ' fullfile(projectDir, 'rawdata') ...
         ' -p ' sub ' -s ' ses{ii} ...
         ' -c ' config ' --forceDcm2niix --clobber']);
 end
@@ -82,11 +80,11 @@ clc
 % system('sudo -H pip3 install fmriprep-docker --upgrade');
 
 system(['fmriprep-docker' ...
-    ' ' projectDir ...
+    ' ' projectDir '/rawdata' ...
     ' ' projectDir '/derivatives' ...
     ' participant --participant-label ' sub ...
     ' --fs-license-file /Applications/freesurfer/license.txt' ...
-    ' --output-space T1w fsnative:den-10k MNI152NLin2009cAsym fsaverage6' ...
+    ' --output-space T1w fsnative:den-32k MNI152NLin2009cAsym fsaverage:den-32k' ...
     ' --skip_bids_validation']);
 
 % surface area of each hemisphere is about 1200 cm^2
