@@ -5,14 +5,13 @@
 clear all
 
 % Depending on the install method, fmriprep-docker is in different locations
-% PATH = getenv('PATH'); setenv('PATH', [PATH ':/usr/local/bin']); % Set path
 PATH = getenv('PATH'); setenv('PATH', ['/opt/anaconda3/bin:/usr/local/bin:' PATH]); % 
 
 
 projectDir  = '/Volumes/Vision/MRI/Decoding';
 % projectDir  = '~/Desktop/motion';
-sub         = '0228'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; %
-ses         = {'00','01','02','03','04'}; % {'01','02'}; %%'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
+sub         = '0201'; %'0248'; %'br'; %'hm'; %'ah'; %'rl'; % 'ds'; % '203' has an unexpected epi naming convention
+ses         = {'01','02','03','04'}; % {'01','02'}; %%'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
 
 %% Run dcm2bids in the shell wrapped in matlab
 
@@ -78,11 +77,21 @@ end
 
 %% Run fmri_prep
 clc
+
+% optional: fmriprep version upgrade 
+% system('sudo -H pip3 install fmriprep-docker --upgrade');
+
 system(['fmriprep-docker' ...
     ' ' projectDir ...
     ' ' projectDir '/derivatives' ...
     ' participant --participant-label ' sub ...
     ' --fs-license-file /Applications/freesurfer/license.txt' ...
-    ' --output-space T1w fsnative MNI152NLin2009cAsym']);
+    ' --output-space T1w fsnative:den-10k MNI152NLin2009cAsym fsaverage6' ...
+    ' --skip_bids_validation']);
+
+% surface area of each hemisphere is about 1200 cm^2
+% each of our voxels cover an area of ~ .04 cm^2
+% so we need a vertex resolution of ~30k/hemisphere
+% fsaverage6 (40,960 vertices per hemisphere)
 
 % TODO: Force mriprep LTS version 20.2.x

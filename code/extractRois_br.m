@@ -14,12 +14,17 @@ setenv('FREESURFER_HOME','/Applications/freesurfer/7.1.1');  % this to tell wher
 % setenv('SUBJECTS_DIR', '/Volumes/Vision/MRI/freesurfer/subjects');
 clear all
 
+% Terminal commands for freesurfer install
+% export FREESURFER_HOME=/Applications/freesurfer/7.2.0
+% export SUBJECTS_DIR=$FREESURFER_HOME/subjects
+% source $FREESURFER_HOME/SetUpFreeSurfer.sh
+
 %% User-changable variables
-mriDir      = '/Users/pw1246/Desktop';
-projectName = 'motion';
+mriDir      = '/Volumes/Vision/MRI'; %'/Users/pw1246/Desktop'; 
+projectName = 'Decoding'; %'motion';
 subjectName = '0203'; 
 sessionName = '01'; 
-spaceName   = 'T1w'; %'MNI152NLin2009cAsym'; % or 'T1w';
+spaceName   = 'fsnative'; %'T1w'; %'MNI152NLin2009cAsym'; % or 'T1w';
 
 %% Make no changes below here
 projectDir = fullfile(mriDir, projectName);
@@ -64,6 +69,16 @@ switch spaceName
                 projectDir '/derivatives/freesurfer:/subjects' ...
                 ' nben/neuropythy' ...
                 ' atlas --verbose ' sub ' --volume-export']);
+        catch ME
+            % how do we see me?
+            rethrow(ME)
+        end
+    case 'fsnative'
+        try
+            system(['/usr/local/bin/docker run -ti --rm -v ' ...
+                projectDir '/derivatives/freesurfer:/subjects' ...
+                ' nben/neuropythy' ...
+                ' atlas --verbose ' sub]);
         catch ME
             % how do we see me?
             rethrow(ME)
