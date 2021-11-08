@@ -1,12 +1,12 @@
-{
-  "descriptions": [
+{ "descriptions": [
     {
       "dataType": "func",
-      "modalityLabel": "bold",
+      "modalityLabel": "sbref",
       "customLabels": "task-3dmotion",
       "criteria": {
-        "SidecarFilename": "*task-3dmotion*",
-        "MultibandAccelerationFactor": "[1-9]"
+        "SidecarFilename": "*_task*",
+        "ImageComments": "Single-band reference",
+        "InstitutionName": "NYU AD"
       }
     },
     {
@@ -14,8 +14,25 @@
       "modalityLabel": "sbref",
       "customLabels": "task-3dmotion",
       "criteria": {
-        "SidecarFilename": "*task-3dmotion*",
-        "ImageComments": "Single-band reference"
+        "SidecarFilename": "*_SBREF_cmrr_mbepi_*"
+      }
+    },
+    {
+      "dataType": "func",
+      "modalityLabel": "bold",
+      "customLabels": "task-3dmotion",
+      "criteria": {
+        "SidecarFilename": "*_task*",
+        "MultibandAccelerationFactor": "[1-9]",
+        "InstitutionName": "NYU AD"
+      }
+    },
+    {
+      "dataType": "func",
+      "modalityLabel": "bold",
+      "customLabels": "task-3dmotion",
+      "criteria": {
+        "SidecarFilename": "*_Motion_cmrr_mbepi_*"
       }
     },
     {
@@ -23,7 +40,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-ap",
       "IntendedFor": [
-        0, 1
+        0, 1, 2, 3
       ],
       "criteria": {
         "SidecarFilename": "*DISTORTION_AP*"
@@ -34,7 +51,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-pa",
       "IntendedFor": [
-        0, 1
+        0, 1, 2, 3
       ],
       "criteria": {
         "SidecarFilename": "*DISTORTION_PA*"
@@ -45,7 +62,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-ap",
       "IntendedFor": [
-        0, 1
+        0, 1, 2, 3
       ],
       "criteria": {
         "SidecarFilename": "*_dir-ap_*"
@@ -56,7 +73,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-pa",
       "IntendedFor": [
-        0, 1
+        0, 1, 2, 3
       ],
       "criteria": {
         "SidecarFilename": "*_dir-pa_*"
@@ -85,5 +102,4 @@
         "ImageType": ["ORIGINAL", "PRIMARY", "M", "ND"]
       }
     }
-  ]
-}
+] }
