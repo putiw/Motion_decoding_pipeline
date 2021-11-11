@@ -15,17 +15,18 @@ end
 % scan name
 
 switch sub
-    case {'0203ny'}
-        taskname = '3dmotion';
-    case {'0204'}
-        taskname = '3dmotion';
-    case {'0205'}
-        taskname = '3dmotion';
-    case {'0206'}
-        taskname = '3dmotion';
-    otherwise
+    case {'sub-0203ny'}
         taskname = 'TASK';
+    case {'sub-0204'}
+        taskname = 'TASK';
+    case {'sub-0205'}
+        taskname = 'TASK';
+    case {'sub-0206'}
+        taskname = 'TASK';
+    otherwise
+        taskname = '3dmotion';
 end
+
 
            
 % Allocate data
