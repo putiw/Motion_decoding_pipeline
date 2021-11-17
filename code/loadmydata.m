@@ -2,7 +2,7 @@ function [dataset stim_label] = loadmydata(BASE,sub,ses,run,roi,p)
 %
 % Load and process (detrend, normalize) data for classification
 
-runfilename = [BASE 'derivatives/fmriprep/' sub '/' sub '_run-info'];
+runfilename = [pwd,'/run-info/' sub '_run-info.txt'];
 runinfo = readtable(runfilename);
 
 % Allocate data

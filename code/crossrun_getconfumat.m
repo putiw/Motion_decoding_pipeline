@@ -7,16 +7,12 @@ tic
 
 % Dependencies
 restoredefaultpath
-addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/jeheelab/TAFKAP
+addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/Rokers/TAFKAP
 % Toolboxes for single trial BOLD amplitude estimation
 addpath(genpath('~/Documents/GitHub/GLMsingle')); % https://github.com/kendrickkay/GLMsingle
 addpath(genpath('~/Documents/GitHub/fracridge')); % https://github.com/nrdg/fracridge
 
-addpath(genpath('~/Documents/GitHub/rokers_mri_lab/code/invChol'));
-
-%BASE = '~/Desktop/motion/';
-BASE = '~/Dropbox (RVL)/MRI/Decoding/';
-% BASE = '/Volumes/Macintosh HD/Decoding/';
+BASE = '~/Desktop/MRI/Decoding/';
 addpath(genpath(BASE));
 
 % Figure defaults
@@ -28,10 +24,10 @@ sub = 'sub-0204';
 ses =  {'01','02'}; % {'03','04'};
 run = [1:10]';
 
-%roi =  {'V1','hMT'};
+roi =  {'V1'};
 % roi =  {'V1','V2','hMT','IPS0'};
 %roi =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
-roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
+%roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
 params = SetupTAFKAP(); 
 [samples,stim_label] = loadmydata(BASE,sub,ses,run,roi,params);
 
