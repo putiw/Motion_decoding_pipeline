@@ -1,10 +1,7 @@
 function [samples_l samples_r stim_label] = load_surf(BASE,sub,ses,run)
 
-scanID = repmat((1:10)',1,4);
-if sub(end) == '4' % this subject uses different scan index
-    scanID(:,1) = [(5:13)';15];
-    scanID(:,3) = [(2:11)'];
-end
+runfilename = [pwd,'/run-info/' sub '_run-info.txt'];
+runinfo = readtable(runfilename);
 
 % Allocate data
 DATA = cell(numel(ses).*numel(run),2);
@@ -15,13 +12,15 @@ stim = [[5:-1:1 8:-1:6]' [4:8 1:3]'];
 for whichSession = 1:numel(ses)
     for whichRun = 1:numel(run)
 
-        runidx = scanID(whichRun,str2double(ses(whichSession)));
-        RUN = num2str(runidx);
+        runidx = runinfo{whichRun,whichSession};
 
         datapath_l = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{whichSession},'/func/', ...
-            sub,'_ses-',ses{whichSession},'_task-3dmotion_run-',RUN,'_space-fsaverage6_hemi-L_bold.func.gii'];
+            sub,'_ses-',ses{whichSession},'_task-',char(runinfo{whichRun,6}),'_run-',num2str(runidx), ...
+            '_space-fsaverage6_hemi-L_bold.func.gii'];
         datapath_r = [BASE,'derivatives/fmriprep/',sub,'/ses-',ses{whichSession},'/func/', ...
-            sub,'_ses-',ses{whichSession},'_task-3dmotion_run-',RUN,'_space-fsaverage6_hemi-R_bold.func.gii'];
+            sub,'_ses-',ses{whichSession},'_task-',char(runinfo{whichRun,6}),'_run-',num2str(runidx), ...
+            '_space-fsaverage6_hemi-R_bold.func.gii'];
+
         Func_l = hcp_readfunc(datapath_l);
         Func_r = hcp_readfunc(datapath_r);
 
@@ -67,7 +66,7 @@ for whichSession = 1:numel(ses)
         % output is downsampled from TRs (240) x voxels to average response per run per direction (8) x voxels
         DATA{numel(run)*(whichSession-1)+whichRun,1} = samples_l;
         DATA{numel(run)*(whichSession-1)+whichRun,2} = samples_r;
-   
+
         stim_label =  [stim_label; stim(:,mod(runidx,2)+1)]; % assign stimulus labels based on odd/even run
     end
 end
