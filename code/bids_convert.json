@@ -36,11 +36,19 @@
       }
     },
     {
+      "dataType": "func",
+      "modalityLabel": "bold",
+      "customLabels": "task-3dmotion",
+      "criteria": {
+        "SidecarFilename": "*_Motion_Control_cmrr_mbepi_*"
+      }
+    },
+    {
       "dataType": "fmap",
       "modalityLabel": "epi",
       "customLabels": "dir-ap",
       "IntendedFor": [
-        0, 1, 2, 3
+        0, 1, 2, 3, 4
       ],
       "criteria": {
         "SidecarFilename": "*DISTORTION_AP*"
@@ -51,7 +59,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-pa",
       "IntendedFor": [
-        0, 1, 2, 3
+        0, 1, 2, 3, 4
       ],
       "criteria": {
         "SidecarFilename": "*DISTORTION_PA*"
@@ -62,7 +70,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-ap",
       "IntendedFor": [
-        0, 1, 2, 3
+        0, 1, 2, 3, 4
       ],
       "criteria": {
         "SidecarFilename": "*_dir-[aA][pP]_topup*"
@@ -73,7 +81,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-pa",
       "IntendedFor": [
-        0, 1, 2, 3
+        0, 1, 2, 3, 4
       ],
       "criteria": {
         "SidecarFilename": "*_dir-[pP][aA]_topup*"
