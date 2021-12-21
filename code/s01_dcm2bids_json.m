@@ -8,7 +8,7 @@ PATH = getenv('PATH'); setenv('PATH', ['/opt/anaconda3/bin:/usr/local/bin:' PATH
 
 projectDir  = '/Volumes/Vision/MRI/Decoding';
 % projectDir  = '~/Desktop/motion';
-sub         = '0228'; %; '0903'; %%'0248'; % '203' has an unexpected epi naming convention
+sub         = '0248'; %; '0903'; %%'0248'; % '203' has an unexpected epi naming convention
 ses         = {'01','02','03','04'}; % {'01','02'}; %%'201019a'; %'201020a'; %'160725a'; %'140821a'; % '151106a'; %
 
 %% Run dcm2bids in the shell wrapped in matlab
@@ -84,12 +84,16 @@ system(['fmriprep-docker' ...
     ' ' projectDir '/derivatives' ...
     ' participant --participant-label ' sub ...
     ' --fs-license-file /Applications/freesurfer/license.txt' ...
-    ' --output-space T1w fsnative:den-32k MNI152NLin2009cAsym fsaverage:den-32k' ...
-    ' --skip_bids_validation']);
+    ' --output-space fsaverage:res-41k' ...
+    ' --cifti-output' ]); %...
+    %' --skip_bids_validation']);
+
+% res-native: the original BOLD resolution
+% does not seem to work for fsnative:res-native, produces ~230k vertices
+% fsaverage:den-41k is equivalent to fsaverage6
+% ' --output-space T1w:res-native MNI152NLin2009cAsym:res-native fsnative:res-native fsaverage:den-41k' ...
 
 % surface area of each hemisphere is about 1200 cm^2
 % each of our voxels cover an area of ~ .04 cm^2
 % so we need a vertex resolution of ~30k/hemisphere
 % fsaverage6 (40,960 vertices per hemisphere)
-
-% TODO: Force mriprep LTS version 20.2.x
