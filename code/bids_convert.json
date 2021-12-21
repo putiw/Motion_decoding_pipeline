@@ -65,7 +65,7 @@
         0, 1, 2, 3
       ],
       "criteria": {
-        "SidecarFilename": "*_dir-ap_*"
+        "SidecarFilename": "*_dir-[aA][pP]_topup*"
       }
     },
     {
@@ -76,7 +76,7 @@
         0, 1, 2, 3
       ],
       "criteria": {
-        "SidecarFilename": "*_dir-pa_*"
+        "SidecarFilename": "*_dir-[pP][aA]_topup*"
       }
     },
     {
