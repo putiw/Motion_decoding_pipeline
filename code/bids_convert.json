@@ -1,4 +1,14 @@
-{ "descriptions": [
+{
+  "descriptions": [
+    {
+      "dataType": "func",
+      "modalityLabel": "bold",
+      "customLabels": "task-3dmotion",
+      "criteria": {
+        "ImageType": ["ORIGINAL", "PRIMARY", "M", "MB", "ND", "MOSAIC"],
+        "ImageComments": "Unaliased MB4/PE3/LB"
+      }
+    },
     {
       "dataType": "func",
       "modalityLabel": "sbref",
@@ -14,33 +24,9 @@
       "modalityLabel": "sbref",
       "customLabels": "task-3dmotion",
       "criteria": {
-        "SidecarFilename": "*_SBREF_cmrr_mbepi_*"
-      }
-    },
-    {
-      "dataType": "func",
-      "modalityLabel": "bold",
-      "customLabels": "task-3dmotion",
-      "criteria": {
-        "SidecarFilename": "*_task*",
-        "MultibandAccelerationFactor": "[1-9]",
-        "InstitutionName": "NYU AD"
-      }
-    },
-    {
-      "dataType": "func",
-      "modalityLabel": "bold",
-      "customLabels": "task-3dmotion",
-      "criteria": {
-        "SidecarFilename": "*_Motion_cmrr_mbepi_*"
-      }
-    },
-    {
-      "dataType": "func",
-      "modalityLabel": "bold",
-      "customLabels": "task-3dmotion",
-      "criteria": {
-        "SidecarFilename": "*_Motion_Control_cmrr_mbepi_*"
+        "ImageType": ["ORIGINAL", "PRIMARY", "M", "ND", "MOSAIC"],
+        "InstitutionName": "NYU - CBI",
+        "SidecarFilename": "*SBREF_cmrr_mbepi_s4_2mm_68sl_PA_task*"
       }
     },
     {
@@ -48,7 +34,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-ap",
       "IntendedFor": [
-        0, 1, 2, 3, 4
+        0, 1, 2
       ],
       "criteria": {
         "SidecarFilename": "*DISTORTION_AP*"
@@ -59,7 +45,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-pa",
       "IntendedFor": [
-        0, 1, 2, 3, 4
+        0, 1, 2
       ],
       "criteria": {
         "SidecarFilename": "*DISTORTION_PA*"
@@ -81,7 +67,7 @@
       "modalityLabel": "epi",
       "customLabels": "dir-pa",
       "IntendedFor": [
-        0, 1, 2, 3, 4
+        0, 1, 2
       ],
       "criteria": {
         "SidecarFilename": "*_dir-[pP][aA]_topup*"
@@ -110,4 +96,5 @@
         "ImageType": ["ORIGINAL", "PRIMARY", "M", "ND"]
       }
     }
-] }
+  ]
+}
