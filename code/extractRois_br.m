@@ -6,11 +6,11 @@
 % Dependencies: Freesurfer, FSL
 %
 % Setup
-setenv('PATH','$PATH:/bin:/usr/bin:/Applications/freesurfer/bin:/usr/local/fsl/bin:/Applications/freesurfer/7.1.1/bin/');
+setenv('PATH','$PATH:/bin:/usr/bin:/Applications/freesurfer/bin:/usr/local/fsl/bin:/Applications/freesurfer/7.2.0/bin/');
 setenv('FSL_DIR', '/usr/local/fsl');
 % system('. $FSL_DIR/etc/fslconf/fsl.sh');
 % system('/usr/local/fsl/etc/fslconf/fsl.sh');
-setenv('FREESURFER_HOME','/Applications/freesurfer/7.1.1');  % this to tell where FSL folder is
+setenv('FREESURFER_HOME','/Applications/freesurfer/7.2.0');  % this to tell where FSL folder is
 % setenv('SUBJECTS_DIR', '/Volumes/Vision/MRI/freesurfer/subjects');
 clear all
 
@@ -22,13 +22,13 @@ clear all
 %% User-changable variables
 mriDir      = '/Volumes/Vision/MRI'; %'/Users/pw1246/Desktop'; 
 projectName = 'Decoding'; %'motion';
-subjectName = '0203'; 
+subjectName = '9999'; 
 sessionName = '01'; 
 spaceName   = 'fsnative'; %'T1w'; %'MNI152NLin2009cAsym'; % or 'T1w';
 
 %% Make no changes below here
 projectDir = fullfile(mriDir, projectName);
-sub = ['sub-' subjectName]; %subject's freesurfer directory name
+sub = 'fsaverage'; %['sub-' subjectName]; %subject's freesurfer directory name
 ses = ['ses-' sessionName];
 space = ['space-' spaceName];
 anatDir = fullfile(projectDir, '/derivatives/fmriprep/', sub, ses, '/anat'); %anatomy directory with subfolder /ROIs for shared ROIs
