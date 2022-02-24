@@ -12,7 +12,8 @@ addpath(genpath('~/Documents/GitHub/TAFKAP')); % https://github.com/Rokers/TAFKA
 addpath(genpath('~/Documents/GitHub/GLMsingle')); % https://github.com/kendrickkay/GLMsingle
 addpath(genpath('~/Documents/GitHub/fracridge')); % https://github.com/nrdg/fracridge
 
-BASE = '~/Desktop/MRI/Decoding/';
+%BASE = '~/Desktop/MRI/Decoding/';
+BASE = '/Users/pw1246/Desktop/MRI/Decoding/';
 addpath(genpath(BASE));
 
 % Figure defaults
@@ -20,14 +21,22 @@ set(0, 'DefaultLineLineWidth', 2);
 set(0,'defaultAxesFontSize', 14)
 
 % Set up parameters
-sub = 'sub-0204';
+subject = {'sub-0201','sub-0202','sub-0204','sub-0205','sub-0206','sub-0228','sub-0229','sub-0248','sub-0903'};                                          % subject ID
+
+
+
+for sub_idx = 1
+
+sub = subject{sub_idx};
+
+
 ses =  {'01','02'}; % {'03','04'};
 run = [1:10]';
 
-roi =  {'V1'};
+%roi =  {'V1'};
 % roi =  {'V1','V2','hMT','IPS0'};
 %roi =  {'V1','V2','V3','V3A','hV4','LO','hMT','MST','IPS'};
-%roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
+roi = {'V1','V2','V3','V3A','V3B','hV4','LO1','LO2','hMT','MST','IPS0','IPS1','IPS2','IPS3','IPS4','IPS5','VO1','VO2','SPL1','PHC1','PHC2','FEF'};
 params = SetupTAFKAP(); 
 [samples,stim_label] = loadmydata(BASE,sub,ses,run,roi,params);
 
@@ -36,7 +45,7 @@ voxelsize = numel(roi,1);
 for i = 1:numel(roi)
     voxelsize(i,1)=size(samples{i},2);
 end
-savedata = fullfile(pwd,'data',[sub '-ses-' ses{:} '.mat']);
+savedata = fullfile(pwd,'braimcore_data',['chance-ses-' ses{:} '.mat']);
 save(savedata,'samples','stim_label','roi','voxelsize');
 
 
@@ -82,7 +91,7 @@ end
 
 % Setup design (parameters)
 nScans = length(ses)*length(run); % scans per subject
-nFolds = 8; % Set to multiple of number of processing cores
+nFolds = 1; % Set to multiple of number of processing cores
 nDirs = 8; % motion directions
 % params.stimval = 22.5.*reshape(repmat([5:-1:1 8:-1:6 4:8 1:3],1,nScans/2),1,[])'; % stimulus labels
 %params.stimval = reshape(repmat([5:-1:1 8:-1:6 4:8 1:3],1,nScans/2),1,[])'; % categorical stimulus labels
@@ -116,6 +125,7 @@ uncs = cell(numel(roi),1); % Preallocate
 pres = cell(numel(roi),1); % Preallocate
 for whichRoi = 1:numel(roi)
     parfor ii = 1:nFolds
+        ii
         rng(ii);% To counter the effects of TAFKAP_Decode setting the system rand seed to const. This was an EXTRAORDINARLY hard bug to find.
         [est{ii}, unc{ii}, liks{ii}, hypers{ii}] = TAFKAP_Decode(samples{whichRoi}, p{ii});
     end
@@ -164,38 +174,10 @@ for whichRoi = 1:numel(roi)
 end
 
 
- f = fullfile(pwd,'result',[sub '-ses-' ses{:} '-TAFKAP.mat']);
+ f = fullfile(pwd,'braimcore_result',['chance-TAFKAP.mat']);
  save(f,'saveresult','ests','uncs','pres','roi','voxelsize');
 
-
-% hp4 = get(subplot(2,2,4),'Position');
-% h = colorbar('Position', [hp4(1)+hp4(3)+0.02  hp4(2)  0.03  hp4(2)+hp4(3)*2.1]);
-% h.Label.String = 'Classification performance (%)';
-% axis tight
-    
-matlab.graphics.internal.setPrintPreferences('DefaultPaperPositionMode','manual')
-set(groot,'defaultFigurePaperPositionMode','manual')
-saveas(gcf, ['../figures/Confusion_matrix-' datestr(now,30) '.pdf'])
-
-
-% Plot uncertainty as a function of motion direction
-figure
-for whichRoi = 1:numel(roi)
-    subplot(sqrtRois,sqrtRois,whichRoi)
-    hold on
-    title(roi{whichRoi})
-    scatter(pres{whichRoi},uncs{whichRoi})
-    y = splitapply(@mean,uncs{whichRoi},pres{whichRoi});
-    plot(1:8,y)
-    
-    xlim([.5 8.5])
-    xticks([1:9])
-    xticklabels(cellstr([{char(8594)} {char(8599)} {char(8593)} {char(8598)} {char(8592)} {char(8601)} {char(8595)} {char(8600)} {char(8594)}]))
-    
-    xlabel('Presented motion direction')
-    ylabel('Entropy (nats)')
 end
-saveas(gcf, ['../figures/Uncertainty-' datestr(now,30) '.pdf'])
 
 
 %% MATLAB Classify
