@@ -1,34 +1,16 @@
+% Plot figures for xxxxx
 
-f1 = figure('Renderer', 'painters', 'Position', [10 10 300 298]);
-hold on
-bar1 = bar([1.2 2],[mean(bar_H)*100,mean(bar_V)*100],0.6,'linewidth',1);
-
-% errorbar(bar1.XData,bar1.YData,'k.','linewidth',1);
-
-bar1.FaceColor = [0.4 0.6 1];
-bar1.FaceAlpha = 0.9;
- plot([0 3.5],[12.96 12.96],'k--','linewidth',1);
-f1.CurrentAxes.XTick = [1.2 2];
-% f1.CurrentAxes.XTickLabel = Coh.roi(plotwhichroi);
-ylabel('Percentage Correct (%)')
-set(gca,'FontSize',15)
-Title = ['(subject 02' sub{1} ')'];
-title({'Decoding Accuracy',Title});
-xlabel('ROI')
-box on
-ax = gca;
-ax.LineWidth = 2;
-
-% xtickangle(45)
-ylim([0 50])
-xlim([0.5 2.7])
-%% xxxxxxx
-%% XXXXXXX  individual data with error bar
 clear all
 close all
+% add path to data
+% addpath(genpath('/Volumes/Vision/MRI/Decoding/derivatives/braimcore_result'))
 
-BASE = [pwd,'/result/'];
-BASEnew = [pwd,'/braimcore_result/'];
+% dependencies: Remove Ts (for errorbars)
+
+%% XXXXXXX  individual data with error bar
+
+% BASE = [pwd,'/result/'];
+BASEnew = '/Volumes/Vision/MRI/Decoding/derivatives/braimcore_result/'; %[pwd,'/braimcore_result/'];
 
 sub = {'0201','0202','0204','0205','0206','0228','0229','0203ny'};
 subnew = {'0201','0202','0204','0205','0206','0228','0229','0903'};
@@ -218,15 +200,17 @@ ax = gca;
 ax.LineWidth = 2;
 ylim([0 50])
 xlim([0.7 3.5])
+
 %% FIGURE 4 bar all ROIs
 clc
 close all
 f3 = figure('Renderer', 'painters', 'Position', [10 10 650 310]);
 hold on
 bar1 = bar(1:roi_n,meanacc(:,:,1),0.8,'linewidth',1);
-errorbar(bar1.XData,bar1.YData,se(:,1),'k.','linewidth',1);
+eh = errorbar(bar1.XData,bar1.YData,se(:,1),'k.','linewidth',1);
+eh.CapSize = 0; % remove errorbar t's
 
-bar1.FaceColor = [0 0.1 0];
+bar1.FaceColor = [1 1 1];
 bar1.FaceAlpha = 0.4;
 plot([0 23],[12.5 12.5],'k--','linewidth',1);
 f3.CurrentAxes.XTick = (1:roi_n);
@@ -234,11 +218,13 @@ f3.CurrentAxes.XTickLabel = Coh.roi;
 box on
 ylim([0 50])
 xtickangle(45)
-h=gca; h.XAxis.TickLength = [0 0];
+
+h = gca; h.XAxis.TickLength = [0 0];
+
 ylabel('Percentage Correct (%)')
 title({'Decoding accuracy averaged across nine subjects'})
 xlabel('ROI')
-set(gca,'FontSize',15,'linewidth',1)
+set(gca,'FontSize',14,'linewidth',1)
 
 %%
 
